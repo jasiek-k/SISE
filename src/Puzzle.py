@@ -1,27 +1,28 @@
 from collections import deque
+import copy
 
 
 class Puzzle:
 
-    def __init__(self, width, height, order):
+    def __init__(self, width, height, order, algo):
         self.width = width
         self.height = height
         self.order = order
         self.values = []
         self.template = []
         self.moves = []
-        # BFS
-        self.fifo = deque()
-        # lista stanów już odwiedzonych
-        self.closed_list = []
+        if algo == "bfs":
+            self.fifo = deque()
+            # lista stanów już odwiedzonych
+            self.closed_list = []
 
     # wczytujemy dane z pliku txt, przechowywane
     # są w postaci 2 wymiarowej tablicy int'ów
     def read_from_file(self, file_name):
-        NUMBER_OF_LINES = 5
+        lines_number = 5
         content = []
         f = open(f"{file_name}.txt", "r")
-        for i in range(NUMBER_OF_LINES):
+        for i in range(lines_number):
             single_line = f.readline()
             single_line = single_line.translate({ord('\n'): None})
             single_line = [int(s) for s in single_line.split(' ')]
@@ -62,7 +63,7 @@ class Puzzle:
     # sprawdzamy, czy rozwiązywana układanka
     # osiągnęła postać wzorca
     def compare_arrays(self, array):
-        return(array == self.template)
+        return (array == self.template)
 
     def switch_values(self, array, value1_position, value2_position):
         copy_value = array[value1_position[0]][value1_position[1]]
@@ -101,6 +102,8 @@ class Puzzle:
         else:
             return False
 
+    # zwraca string ze wszystkimi ruchami, jakie 
+    # możemy wykonać w danym momencie
     def check_moves(self, array):
         moves = ""
         if self.check_up(array):
@@ -113,6 +116,8 @@ class Puzzle:
             moves = moves + "L"
         return moves
 
+    # uzyskujemy możliwe do wykonania w danym momencie
+    # ruchy uwzględniające kolejność podaną przy wywołaniu
     def compare_moves(self, array):
         allowed_moves = self.check_moves(array)
         moves = ""
@@ -137,7 +142,7 @@ class Puzzle:
             move_params[1] = move_params[1] + 1
             array = self.switch_values(
                 array, self.get_zero(array), move_params)
-        elif move == "L":
+        if move == "L":
             move_params = self.get_zero(array)
             move_params[1] = move_params[1] - 1
             array = self.switch_values(
@@ -154,54 +159,43 @@ class Puzzle:
 
     def bfs(self):
         # Przeglądanie grafu zaczynamy od wybranego wierzchołka v - stan początkowy układanki
-        self.fifo.append(self.values)
-        # Dodajemy go do listy stanów odwiedzonych
-        # self.closed_list.append(self.values)
+        v_copy = self.values.copy()
+        self.fifo.append(v_copy)
+
         iter = 0
-        # while len(self.fifo) != 0:
-
-        while iter < 20:
-
+        while len(self.fifo) != 0:
+        #while iter < 20:
+            
             # Pobieramy wierzchołek z kolejki
+            v = []
             v = self.fifo.popleft()
-            print(v)
-            ifGo = False
-            while ifGo == False:
-                if self.is_visited(v):
-                    print("WIELKI CHUJ")
-                    ifGo = True
-                    #v = self.fifo.popleft()
-                else:
-                    ifGo = False
+            self.print_values(v)
+            print()
+            
+            # Sprawdzamy, czy dany układ nie był wcześniej przetwarzany
+            if self.is_visited(v) == True:
+                while self.is_visited(v) == True:
+                    v = self.fifo.popleft()
             
             # Sprawdzamy, czy stanowi on rozwiązanie - jeśli tak to zwracamy plansze
             if self.compare_arrays(v):
                 return v
-            self.closed_list.append(v.copy())
+
+            # Dodajemy go do listy stanów odwiedzonych
+            array_copy = v.copy()
+            self.closed_list.append(array_copy)
+
             # Sprawdzamy, jakie ruchy możemy wykonać i porównujemy je z parametrami wywołania
-            allowed_moves = self.compare_moves(v)
+            allowed_moves = self.compare_moves(array_copy)
+
             for i in range(len(allowed_moves)):
-                board_copy = v.copy()
-                board = self.move_node(board_copy, allowed_moves[i])
-                print(f"RUCH: {allowed_moves[i]}")
-                print(board)
-                self.fifo.append(board)
-
-            print("===============================")
-            print(iter)
-            print(len(self.fifo))
-            print(len(self.closed_list))
-            print("-------------------------------")
-            self.print_values(v)
-            print("===============================")
-
-            #self.move_node(v, "U")
-            # self.print_values(v)
-
+                array_copy = []
+                array_copy = copy.deepcopy(v) 
+                new_array = self.move_node(array_copy, allowed_moves[i])
+                self.fifo.append(new_array)
+            
             iter = iter + 1
 
-        # q.append('a')
-        # q.popleft())
 
     """
     def dfs(self):
