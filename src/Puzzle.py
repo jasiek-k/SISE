@@ -1,20 +1,25 @@
 from collections import deque
 import copy
+import time
 
 
 class Puzzle:
 
-    def __init__(self, width, height, order, algo):
+    def __init__(self, width, height, file_name, order, algo):
         self.width = width
         self.height = height
         self.order = order
         self.values = []
         self.template = []
         self.moves = []
+        self.file_name = file_name
+        self.read_values()
         if algo == "bfs":
             self.fifo = deque()
             # lista stanów już odwiedzonych
             self.closed_list = []
+            self.processed_time = 0
+            self.algo_return = 1
 
     # wczytujemy dane z pliku txt, przechowywane
     # są w postaci 2 wymiarowej tablicy int'ów
@@ -31,8 +36,8 @@ class Puzzle:
 
     # wczytane dane dotyczące zadanej układanki
     # ustawiamy jako atrybuty klasy
-    def read_values(self, file_name):
-        content = self.read_from_file(file_name)
+    def read_values(self):
+        content = self.read_from_file(self.file_name)
         self.width = content[0][0]
         self.height = content[0][1]
         content.pop(0)
@@ -48,6 +53,15 @@ class Puzzle:
         file = open(f"{file_name}.txt", "w")
         file.write(content)
         file.close()
+
+    # zapisywanie pliku z rozwiązaniem
+    def save_solution(self):
+        if self.algo_return == 0:
+            moves_string = "".join(self.moves)
+            saved_string = f"{len(self.moves)}\n{moves_string}"
+        elif self.algo_return == -1:
+            moves_string = "-1"
+        self.save_to_file(f"./files/solutions/{self.file_name[19:31]}_rozwiazanie", saved_string)
 
     # funkcja pomocnicza do wyświetlania układanki
     def print_values(self, array):
@@ -158,44 +172,60 @@ class Puzzle:
         return False
 
     def bfs(self):
+        start_time = time.time()
         # Przeglądanie grafu zaczynamy od wybranego wierzchołka v - stan początkowy układanki
-        v_copy = self.values.copy()
-        self.fifo.append(v_copy)
+        v_dict = {
+            "values": self.values.copy(), 
+            "moves": []
+        }
+        self.fifo.append(v_dict)
 
+        solution_level = 0
         iter = 0
+       
         while len(self.fifo) != 0:
         #while iter < 20:
-            
             # Pobieramy wierzchołek z kolejki
-            v = []
             v = self.fifo.popleft()
-            self.print_values(v)
-            print()
-            
+
             # Sprawdzamy, czy dany układ nie był wcześniej przetwarzany
-            if self.is_visited(v) == True:
-                while self.is_visited(v) == True:
+            if self.is_visited(v["values"]) == True:
+                while self.is_visited(v["values"]) == True:
                     v = self.fifo.popleft()
             
             # Sprawdzamy, czy stanowi on rozwiązanie - jeśli tak to zwracamy plansze
-            if self.compare_arrays(v):
+            if self.compare_arrays(v["values"]):
+                self.moves = v["moves"].copy()
+                self.algo_return = 0
+                end_time = time.time()
+                self.processed_time = int((end_time - start_time) * 1000)
                 return v
-
+            
             # Dodajemy go do listy stanów odwiedzonych
-            array_copy = v.copy()
-            self.closed_list.append(array_copy)
+            values_copy = v["values"].copy()
+            self.closed_list.append(values_copy)
+
+            if solution_level < len(v["moves"]):
+                solution_level = len(v["moves"])
 
             # Sprawdzamy, jakie ruchy możemy wykonać i porównujemy je z parametrami wywołania
-            allowed_moves = self.compare_moves(array_copy)
+            allowed_moves = self.compare_moves(values_copy)
 
+            # Wykonujemy odpowiednie ruchy i w zachowanej kolejności dodajemy plansze do kolejki 
             for i in range(len(allowed_moves)):
                 array_copy = []
                 array_copy = copy.deepcopy(v) 
-                new_array = self.move_node(array_copy, allowed_moves[i])
-                self.fifo.append(new_array)
+                array_copy["values"] = self.move_node(array_copy["values"], allowed_moves[i])
+                array_copy["moves"] += allowed_moves[i] 
+                self.fifo.append(array_copy)
             
             iter = iter + 1
 
+            if solution_level == 15:
+                self.algo_return = -1
+                end_time = time.time()
+                self.processed_time = int((end_time - start_time) * 1000)
+                return -1 
 
     """
     def dfs(self):
