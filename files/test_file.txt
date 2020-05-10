@@ -1,4 +1,0 @@
-4 4
-This is Delhi 
-This is Paris 
-This is London 

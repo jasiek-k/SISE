@@ -20,13 +20,15 @@ class Puzzle:
             self.closed_list = []
             self.processed_time = 0
             self.algo_return = 1
+        elif algo == "dfs":
+            self.stack = []
 
     # wczytujemy dane z pliku txt, przechowywane
     # są w postaci 2 wymiarowej tablicy int'ów
     def read_from_file(self, file_name):
         lines_number = 5
         content = []
-        f = open(f"{file_name}.txt", "r")
+        f = open(f"{file_name}", "r")
         for i in range(lines_number):
             single_line = f.readline()
             single_line = single_line.translate({ord('\n'): None})
@@ -60,8 +62,15 @@ class Puzzle:
             moves_string = "".join(self.moves)
             saved_string = f"{len(self.moves)}\n{moves_string}"
         elif self.algo_return == -1:
-            moves_string = "-1"
+            saved_string = "-1"
         self.save_to_file(f"./files/solutions/{self.file_name[19:31]}_rozwiazanie", saved_string)
+
+    def save_info(self):
+        if self.algo_return == 0:
+            saved_string = f"{len(self.moves)}\n{format(self.processed_time, '.3f')}"
+        elif self.algo_return == -1:
+            saved_string = "-1"
+        self.save_to_file(f"./files/info/{self.file_name[19:31]}_informacje", saved_string)
 
     # funkcja pomocnicza do wyświetlania układanki
     def print_values(self, array):
@@ -163,6 +172,7 @@ class Puzzle:
                 array, self.get_zero(array), move_params)
         return array
 
+    # sprawdzamy, czy dany układ piętnastki znajduje się na liście odwiedzonych
     def is_visited(self, array):
         if len(self.closed_list) == 0:
             return False
@@ -173,7 +183,7 @@ class Puzzle:
 
     def bfs(self):
         start_time = time.time()
-        # Przeglądanie grafu zaczynamy od wybranego wierzchołka v - stan początkowy układanki
+        # przeglądanie grafu zaczynamy od wybranego wierzchołka v - stan początkowy układanki
         v_dict = {
             "values": self.values.copy(), 
             "moves": []
@@ -185,33 +195,33 @@ class Puzzle:
        
         while len(self.fifo) != 0:
         #while iter < 20:
-            # Pobieramy wierzchołek z kolejki
+            # pobieramy wierzchołek z kolejki
             v = self.fifo.popleft()
 
-            # Sprawdzamy, czy dany układ nie był wcześniej przetwarzany
+            # sprawdzamy, czy dany układ nie był wcześniej przetwarzany
             if self.is_visited(v["values"]) == True:
                 while self.is_visited(v["values"]) == True:
                     v = self.fifo.popleft()
             
-            # Sprawdzamy, czy stanowi on rozwiązanie - jeśli tak to zwracamy plansze
+            # sprawdzamy, czy stanowi on rozwiązanie - jeśli tak to zwracamy plansze
             if self.compare_arrays(v["values"]):
                 self.moves = v["moves"].copy()
                 self.algo_return = 0
                 end_time = time.time()
-                self.processed_time = int((end_time - start_time) * 1000)
+                self.processed_time = float((end_time - start_time) * 1000)
                 return v
             
-            # Dodajemy go do listy stanów odwiedzonych
+            # dodajemy go do listy stanów odwiedzonych
             values_copy = v["values"].copy()
             self.closed_list.append(values_copy)
 
             if solution_level < len(v["moves"]):
                 solution_level = len(v["moves"])
 
-            # Sprawdzamy, jakie ruchy możemy wykonać i porównujemy je z parametrami wywołania
+            # sprawdzamy, jakie ruchy możemy wykonać i porównujemy je z parametrami wywołania
             allowed_moves = self.compare_moves(values_copy)
 
-            # Wykonujemy odpowiednie ruchy i w zachowanej kolejności dodajemy plansze do kolejki 
+            # wykonujemy odpowiednie ruchy i w zachowanej kolejności dodajemy plansze do kolejki 
             for i in range(len(allowed_moves)):
                 array_copy = []
                 array_copy = copy.deepcopy(v) 
@@ -221,14 +231,33 @@ class Puzzle:
             
             iter = iter + 1
 
+            # postępowanie w przypadku niepowodzenia w rozwiązaniu układanki 
             if solution_level == 15:
                 self.algo_return = -1
                 end_time = time.time()
-                self.processed_time = int((end_time - start_time) * 1000)
+                self.processed_time = float((end_time - start_time) * 1000)
                 return -1 
-
-    """
+    
     def dfs(self):
+        v_dict = {
+            "values": self.values.copy(), 
+            "moves": []
+        }
+        self.stack.append(v_dict)
 
+        while len(self.stack) != 0:
+            # przeglądanie grafu zaczynamy od wybranego wierzchołka v - stan początkowy układanki
+            # pobieramy wierzchołek ze stosu
+            v = self.stack.pop()
+
+            # sprawdzamy, czy dany układ nie był już odwiedzany
+            if self.is_visited(v["values"]) == True:
+                while self.is_visited(v["values"]) == True:
+                    v = self.stack.pop()
+
+            
+        
+    
+    """
     def a_star(self):
     """
