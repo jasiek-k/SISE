@@ -51,5 +51,17 @@ if result != None and result != -1:
     puzzle.save_solution()
     puzzle.save_info()
 """
-puzzle = Puzzle("dfs", "RDUL", "4x4_01_00002.txt", "dfs_test.txt", "dfs_test_stats.txt")
+"""
+puzzle = Puzzle("dfs", "RDUL", "4x4_02_00003.txt", "dfs_test.txt", "dfs_test_stats.txt")
 print(puzzle.dfs())
+"""
+puzzle = Puzzle("bfs", "ULDR", "4x4_07_00212.txt", "bfs_test.txt", "bfs_test_stats.txt")
+result = puzzle.bfs()
+if result != None and result != -1:
+    puzzle.print_values(result["values"])
+    print(puzzle.processed_time)
+    print(puzzle.moves)
+    print(puzzle.processed)
+    print(len(puzzle.open_list))
+    puzzle.save_solution()
+    puzzle.save_info()

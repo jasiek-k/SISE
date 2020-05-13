@@ -21,13 +21,14 @@ class Puzzle:
         self.max_level = 20
         self.open_list = []             # lista stanów już odwiedzonych
         self.read_values()
+        self.read_template("./files/template.txt")
         if self.algo == "bfs":
             self.fifo = deque()         # kolejka wykorzystywana przy algorytmie bfs
             self.processed = 0          # liczba stanów przetworzonych
         elif self.algo == "dfs":
             self.stack = []             # stos wykorzystywany przy algorytmie dfs
             self.prev_move = ""
-        self.read_template("./files/template.txt")
+        
           
 
     # wczytujemy dane z pliku txt, przechowywane
@@ -164,6 +165,18 @@ class Puzzle:
                 moves = moves + self.order[i]
         return moves
 
+    def check_all_moves(self, array):
+        moves = [0] * len(self.order)
+        allowed_moves = self.check_moves(array)
+        all_moves = ["U", "D", "R", "L"]
+
+        for i in range(len(moves)):
+            for j in range(len(all_moves)):
+                if self.order[i] == all_moves[j] and all_moves[j] in allowed_moves:
+                    moves[i] = 1
+        print(allowed_moves)
+        return moves
+
     # funkcja poruszająca pustym polem w zadanym kierunku
     def move_node(self, array, move):
         if move == "U":
@@ -199,22 +212,20 @@ class Puzzle:
 
     # mechanizm nawrotu wykorzystywany w algorytmie dfs 
     def move_back(self, dict):
-        print(dict["moves"])
-        last_move = dict["moves"].pop()
-        print(dict["moves"])
-        print(last_move)
+        last_move = self.prev_move
+        dict["moves"] = dict["moves"][:-1]
+        new_move = ""
         if last_move == "U":
-            dict["values"] = self.move_node(dict["values"], "D")
-            dict["moves"] += "D"
+            new_move = "D"
         if last_move == "D":
-            dict["values"] = self.move_node(dict["values"], "U")
-            dict["moves"] += "U"
+            new_move = "U"
         if last_move == "L":
-            dict["values"] = self.move_node(dict["values"], "R")
-            dict["moves"] += "R"
+            new_move = "R"
         if last_move == "R":
-            dict["values"] = self.move_node(dict["values"], "L")
-            dict["moves"] += "L"
+            new_move = "L"
+        dict["values"] = self.move_node(dict["values"], new_move)
+        #dict["moves"] += new_move
+        self.prev_move = new_move
         return dict
 
     # algorytm bfs - zwraca rozwiązaną plansze lub -1
@@ -274,71 +285,65 @@ class Puzzle:
     
     # algorytm dfs - zwraca rozwiązaną plansze lub -1
     def dfs(self):
-        start_time = time.time()
-        # przeglądanie grafu zaczynamy od wybranego wierzchołka v - stan początkowy układanki
+        #start_time = time.time()
+        solution_level = 0
+        levels_list = [0] * self.max_level
+        max_moves = 4
+
         v_dict = {
             "values": self.values.copy(), 
             "moves": []
         }
-        solution_level = 0
-        max_moves = 4
-        self.stack.append(v_dict)
-        current_direction = ""
-        levels_list = [0] * self.max_level
-
-        while self.compare_arrays(v_dict["values"]):
+        
+        
+        print(self.check_all_moves(v_dict["values"]))
+        iter = 0
+        while self.compare_arrays(v_dict["values"]) == False and iter < 2000:
+        #while iter < 2000:
+            print('check')
             if solution_level < self.max_level:
                 if levels_list[solution_level] < max_moves:
-                    if 
+                    print('check2')
+                    allowed_moves = self.check_all_moves(v_dict["values"])
+                    move_index = levels_list[solution_level]
+                    print(f"move index: {move_index}")
+                    print(f"move: {self.order[move_index]}")
+                    if allowed_moves[move_index] == 1:
+                        print('check3')
+                        """
+                        dict_copy = []
+                        dict_copy = copy.deepcopy(v_dict) 
+                        dict_copy["values"] = self.move_node(dict_copy["values"], self.order[move_index])
+                        dict_copy["moves"] += self.order[move_index]
+                        """
+                        v_dict["values"] = self.move_node(v_dict["values"], self.order[move_index])
+                        v_dict["moves"] += self.order[move_index]
+                        self.prev_move = self.order[move_index]
                         values_copy = v_dict["values"].copy()
                         self.open_list.append(values_copy)
                         levels_list[solution_level - 1] += 1
                     else:
+                        print('check4')
                         levels_list[solution_level] += 1
                 else:
+                    print('check5')
                     levels_list[solution_level] = 0
                     v_dict = self.move_back(v_dict)
+            solution_level = len(v_dict["moves"])
+            print('check6')
+            iter += 1
+        return v_dict
 
 
 
-
-
+        """
         while len(self.stack) != 0:
             # przeglądanie grafu zaczynamy od wybranego wierzchołka v - stan początkowy układanki
             # pobieramy wierzchołek ze stosu
             v = self.stack.pop()
             print(v)
             # sprawdzamy, czy dany układ nie był już odwiedzany
-            """
-            if self.is_visited(v["values"]) == True:
-                while self.is_visited(v["values"]) == True:
-                    v = self.stack.pop()
-            """
             
-
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
             # dodajemy go do listy stanów odwiedzonych
             values_copy = v["values"].copy()
@@ -375,12 +380,13 @@ class Puzzle:
                 # tylko jeśli sie nie cofamy 
                 if self.is_visited(array_copy["values"]) == False:
                     self.stack.append(array_copy)
-            """
+        """
+        """
             if len(allowed_moves) > 0:
                 direction = allowed_moves[0]
             print(direction)
-            """
-            """
+        """
+        """
             for i in range(2):
                 v["values"] = self.move_node(v["values"], allowed_moves[i])
                 v["moves"] += allowed_moves[i]
@@ -389,13 +395,14 @@ class Puzzle:
             print(v)        
 
             if solution_level == self.max_level 
-            """
+        """
+        """
             if solution_level == self.max_level:
                 self.algo_return = -1
                 end_time = time.time()
                 self.processed_time = float((end_time - start_time) * 1000)
                 return -1 
-
+        """
 
 
 
