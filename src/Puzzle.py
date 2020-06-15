@@ -31,10 +31,10 @@ class Puzzle:
             self.prev_move = ""         # informacja o poprzednim wykonanym ruchu
         elif self.algo == "astr":
             self.strategy = strategy    # manh/hamm
-            self.state = state
-            self.parent = parent
-            self.path_cost = path_cost
-            self.last_move = order
+            self.state = state          # aktualny układ
+            self.parent = parent        # rodzic; poprzedni układ
+            self.path_cost = path_cost  # koszt ruchu
+            self.last_move = order      # ostatni wykonany ruch
             self.open_list_length = 0
 
     # wczytujemy dane z pliku txt, przechowywane
@@ -201,7 +201,7 @@ class Puzzle:
     # funkcja poruszająca pustym polem w zadanym kierunku
     def move_node(self, array, move):
         if self.algo == "astr":
-            array = copy.deepcopy(array)
+            array = copy.deepcopy(array) #tworze nowy obiekt na bazie array
         if move == "U":
             move_params = self.get_zero(array)
             move_params[0] = move_params[0] - 1
@@ -222,7 +222,7 @@ class Puzzle:
             move_params[1] = move_params[1] - 1
             array = self.switch_values(
                 array, self.get_zero(array), move_params)
-        return array
+        return array #zwraca kopie po ruchu
 
     # sprawdzamy, czy dany układ piętnastki znajduje się na liście odwiedzonych
     def is_visited(self, array):
@@ -348,6 +348,8 @@ class Puzzle:
         # zwiększamy liczbę przetworzonych stanów po odpytaniu sąsiedztwa
         self.processed += 1
 
+        # zwraca jakie ruchymy możemy wykonać dla danego układu
+        # w postaci listy
     def get_valid_moves(self):
         x = self.get_zero(self.state)[0]
         y = self.get_zero(self.state)[1]
@@ -363,7 +365,7 @@ class Puzzle:
         if ((y < (cols - 1)) and self.last_move != 'L'):
             moves.append('R')
         return moves
-
+    #niewykorzystywane
     def get_ordered_moves(self, strategy):
         moves = self.get_valid_moves()
         ordered = []
@@ -372,14 +374,14 @@ class Puzzle:
                 if(sign == str(move)):
                     ordered.append(move)
         return ordered
-
+    #zwraca ścieżkę z wykonanymi ruchami w postaci stringa
     def get_path(self):
         path = ''
         if(self.parent == None):
             return path
         path += self.parent.get_path() + str(self.last_move)
         return path
-
+    #metoda tworząca obiekt klasy Astar i wywołująca dla niego metodę solve(), która rozwiązuje układ
     def a_star(self):
         self.state = self.values
         return AStar(self.state, self.template, self.file_name, self.sol_name, self.stats_name, self.strategy, self.order).solve()
@@ -421,20 +423,20 @@ class Puzzle:
 
 class AStar:
 
-    frontier = {}
-    explored = {}
+    frontier = {} #do przetworzenia
+    explored = {} #przetworzone
 
     def __init__(self, start, target, file_name, sol_name, stats_name, strategy, order):
-        self.target = target
-        self.path = []
-        self.strategy = strategy
+        self.target = target #wzorcowe rozwiązanie
+        self.path = [] #ścieżka wykonanych ruchów
+        self.strategy = strategy #heurestyka
         self.start = Puzzle("astr", order, file_name, sol_name,
-                            stats_name, strategy, start, None, 0)
-        self.max_depth = 7
-        self.max_recursion = 20
-        self.rows = len(start)
+                            stats_name, strategy, start, None, 0) #początkowy układ
+        self.max_depth = 7 #maksymalna głębokość
+        self.max_recursion = 20 #kiedy zawraca algorytm
+        self.rows = len(start) 
         self.columns = len(start[0])
-        if(self.start != self.target):
+        if(self.start != self.target): #jeżeli układ początkowy jest różny od wzorcowego; wyliczanie dystansu na podstawie wybranej heurestyki
             if(self.strategy == 'manh'):
                 distance = self.Manhattan(self.start.state)
             elif(self.strategy == 'hamm'):
@@ -442,7 +444,7 @@ class AStar:
             self.frontier.setdefault(distance, []).append(self.start.state)
             self.explored[str(self.start.state)] = self.start
 
-    def Manhattan(self, state):
+    def Manhattan(self, state): #liczenie odleglosci pola od jego poprawnego miejsca
         distance = 0
         for x in state:
             for y in x:
@@ -450,11 +452,10 @@ class AStar:
                     temp = y % self.columns
                     if(temp == 0):
                         temp = self.columns
-                    distance += abs((state.index(x) + 1) - ceil(y /
-                                                                self.rows)) + abs((x.index(y) + 1) - temp)
+                    distance += abs((state.index(x) + 1) - ceil(y / self.rows)) + abs((x.index(y) + 1) - temp)
         return distance
 
-    def Hamming(self, state):
+    def Hamming(self, state): #koszt zwieksza sie za kazde pole ktore nie jest na swoim miejscu
         distance = 0
         for x in state:
             for y in x:
@@ -465,47 +466,47 @@ class AStar:
                     if(((state.index(x) + 1) != ceil(y / self.rows)) or ((x.index(y) + 1) != temp)):
                         distance += 1
         return distance
-
+    #zwraca ścieżkę ruchów
     def return_path(self):
         return self.path
 
     def solve(self):
-        start_time = time.time()
-        solution_level = 0
-        while(len(self.frontier) > 0):
-            if solution_level < self.max_recursion:
-                closest = min(self.frontier)
-                current_state = self.frontier[closest].pop(0)
+        start_time = time.time() #uruchomienie timera
+        solution_level = 0 #ustawienie początkowego poziomu rozwiązania na 0
+        while(len(self.frontier) > 0): #dopóki cos jest w slowniku ,,do przetworzenia"
+            if solution_level < self.max_recursion: #wykonuje sie dopóki poziom rozwiązania < 20
+                closest = min(self.frontier) #wybranie indeksu ukladanki o najmniejszym koszcie z układów do przetworzenia
+                current_state = self.frontier[closest].pop(0) #wybranie układanki i zdjecie jej ze słownika
                 if(len(self.frontier[closest]) == 0):
                     del(self.frontier[closest])
                 current_state_string = current_state.__str__()
                 current_state = self.explored[current_state_string]
-                moves = current_state.get_valid_moves()
-                for move in moves:
+                moves = current_state.get_valid_moves() #mozliwe do wykonania ruchy w danej ukladance
+                for move in moves: #dla możliwego ruchu
                     new_array = current_state.move_node(
-                        current_state.state, move)
-                    solution_level = len(current_state.get_path())
-                    new_cost = current_state.path_cost + 1
+                        current_state.state, move) #wykonanie ruchu
+                    solution_level = len(current_state.get_path()) #wpisanie wykonanego ruchu do długości rozwiązania
+                    new_cost = current_state.path_cost + 1 #wyliczenie częsciowego kosztu na podstawie długości rozwiązania(bez heurstyki)
                     new_move = move
                     new_state = Puzzle("astr", new_move, self.start.file_name, self.start.sol_name,
-                                       self.start.stats_name, self.start.strategy, new_array, current_state, new_cost)
-                    new_state_string = new_array.__str__()
-                    if(new_state_string not in self.explored):
-                        self.explored[new_state_string] = new_state
-                        if(new_cost > self.max_depth):
-                            self.max_depth = new_cost
-                        if(new_array == self.target):
+                                       self.start.stats_name, self.start.strategy, new_array, current_state, new_cost)#tworzymy nowy obiekt w celu dodania do slownika ,,do przetworzenia"
+                    new_state_string = new_array.__str__() #str do porówniania łańcuchów znaków czy nie są identyczne
+                    if(new_state_string not in self.explored): #sprawdzenie czy nowy obiekt nie był już przetworzony
+                        self.explored[new_state_string] = new_state #jesli nie jest w przetworzonych to jest dodawany
+                        if(new_cost > self.max_depth): #sprawdzenie czy dlugosc rozwiazania jest wieksza od obecnie najwiekszej
+                            self.max_depth = new_cost #jezeli jest wieksza to jest nadpisywana
+                        if(new_array == self.target): #sprawdzenie czy nowy obiekt jest rozwiązaniem
                             solving_time = time.time() - start_time
                             solved = round(solving_time, 3)
                             path = new_state.get_path()
                             explored = (len(self.explored) + 1)
-                            frontier = len(self.explored) - len(self.frontier)
-                            return [path, explored, frontier, self.max_depth, solved]
-                        if(self.strategy == 'manh'):
+                            frontier = len(self.explored) - len(self.frontier) 
+                            return [path, explored, frontier, self.max_depth, solved] #zwracanie wyniku
+                        if(self.strategy == 'manh'): #obliczenie nowgo kosztu z uwzglednieniem heurestyki manhattan
                             distance = self.Manhattan(new_array)
-                        elif(self.strategy == 'hamm'):
+                        elif(self.strategy == 'hamm'): #obliczenie nowgo kosztu z uwzglednieniem heurestyki hamminga
                             distance = self.Hamming(new_array)
-                        if(distance not in self.frontier):
+                        if(distance not in self.frontier): #dodanie nowej ukladanki do slownika ,,do przetworzenia", jezeli jeszcze takiej nie ma
                             self.frontier.setdefault(
                                 distance, []).append(new_array)
                         else:
