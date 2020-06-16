@@ -39,3 +39,15 @@ możliwych ruchów:
 Jeśli funkcja nie znajdzie rozwiązania, po wykonaniu odpowiedniej
 liczby nawrotów to wynikiem jej działania będzie None.
 
+A*:
+1. Wczytujemy początkowy układ planszy
+2. Dodanie układu do kolejki do przetworzenia
+Pętla(dopóki coś jest do przetworzenia):
+3. Sprawdzeine kosztów i wybranie układu o najmniejszym; zdjęcie go z kolejki
+4. Sprawdzenie możliwych do wykonania ruchów
+5. Dla Każdego ruchu:
+	5.1 wykonanie ruchu i dopisanie go do długości rozwiązania
+	5.2 sprawdzenie czy nowy układ nie był już przetworzony, jak nie to dopisanie go do prztworzonych i:
+	5.3 sprawdzenie czy jest rozwiązaniem, jak tak, to zakończ, jak nie to:
+	5.4 obliczenie kosztu ruchu z uwzględnieniem heurestyki
+	5.4 dodanie nowego układu do kolejki do przetworzenia
